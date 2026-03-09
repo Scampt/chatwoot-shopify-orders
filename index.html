@@ -97,6 +97,26 @@
       
       try {
         const email = parsedData.data?.conversation?.meta?.sender?.email;
+        // Después de extraer el email, ANTES de construir la URL
+      const identityCompleted = parsedData.data?.contact?.custom_attributes?.identity_completed;
+      
+      console.log('🔍 Identity completed:', identityCompleted);
+      
+      if (!identityCompleted) {
+        console.log('❌ Cliente no verificado');
+        document.getElementById('loading').innerHTML = `
+          <div style="text-align: center; padding: 40px; color: #6b7280;">
+            <div style="font-size: 48px; margin-bottom: 12px;">🔒</div>
+            <p><strong>Cliente no verificado</strong></p>
+            <p style="font-size: 13px; margin-top: 8px; opacity: 0.7;">
+              Los pedidos se mostrarán después de completar la verificación
+            </p>
+          </div>
+        `;
+        return;
+      }
+      
+      console.log('✅ Cliente verificado, cargando pedidos...');
         console.log('🔍 Extrayendo email...');
         console.log('🔍 Email encontrado:', email);
         
