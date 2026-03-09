@@ -45,68 +45,80 @@
   <iframe id="orders-container" style="display:none;"></iframe>
 
   <script>
-    console.log('=== DASHBOARD APP - PostMessage Listener ===');
+  console.log('=== DASHBOARD APP - PostMessage Listener ===');
+  
+  let dataReceived = false;
+  
+  window.addEventListener('message', function(event) {
+    // Ignorar mensajes que no sean de Chatwoot
+    if (event.origin !== 'https://chat.jousfit.com') {
+      console.log('Mensaje ignorado - origen:', event.origin);
+      return;
+    }
     
-    let dataReceived = false;
+    console.log('📨 PostMessage recibido (raw):', event.data);
     
-    window.addEventListener('message', function(event) {
-      // Ignorar mensajes que no sean de Chatwoot
-      if (event.origin !== 'https://chat.jousfit.com') {
-        console.log('Mensaje ignorado - origen no permitido:', event.origin);
-        return;
-      }
-      
-      console.log('📨 PostMessage recibido:', event.data);
-      
-      // Verificar estructura
-      if (!event.data || event.data.event !== 'appContext') {
-        console.log('Mensaje ignorado - no es appContext');
-        return;
-      }
-      
-      if (dataReceived) {
-        console.log('Datos ya recibidos, ignorando...');
-        return;
-      }
-      
-      dataReceived = true;
-      
+    // PARSEAR si es string
+    let data = event.data;
+    if (typeof data === 'string') {
       try {
-        const email = event.data.data?.conversation?.meta?.sender?.email;
-        
-        if (!email) {
-          throw new Error('Email no encontrado en el mensaje');
-        }
-        
-        console.log('✅ Email extraído:', email);
-        
-        // Construir URL de V13
-        const v13Url = 'https://jousfit-n8n.q3fy2l.easypanel.host/webhook/customer-orders?email=' + encodeURIComponent(email);
-        
-        console.log('🚀 Cargando pedidos desde:', v13Url);
-        
-        // Ocultar loading y mostrar iframe
-        document.getElementById('loading').style.display = 'none';
-        const iframe = document.getElementById('orders-container');
-        iframe.src = v13Url;
-        iframe.style.display = 'block';
-        
-      } catch (error) {
-        console.error('❌ Error procesando mensaje:', error);
-        document.getElementById('loading').innerHTML = '<p style="color: #dc2626;">Error: ' + error.message + '</p>';
+        data = JSON.parse(data);
+        console.log('✅ JSON parseado:', data);
+      } catch (e) {
+        console.error('❌ Error parseando JSON:', e);
+        return;
       }
-    }, false);
+    }
     
-    // Log inicial
-    console.log('Listener activo, esperando PostMessage de Chatwoot...');
+    // Verificar estructura
+    if (!data || data.event !== 'appContext') {
+      console.log('Mensaje ignorado - no es appContext');
+      return;
+    }
     
-    // Timeout de 10 segundos
-    setTimeout(() => {
-      if (!dataReceived) {
-        console.warn('⚠️ No se recibió PostMessage en 10 segundos');
-        document.getElementById('loading').innerHTML = '<p style="color: #f59e0b;">No se recibieron datos de Chatwoot</p>';
+    if (dataReceived) {
+      console.log('Datos ya recibidos, ignorando...');
+      return;
+    }
+    
+    dataReceived = true;
+    
+    try {
+      const email = data.data?.conversation?.meta?.sender?.email;
+      
+      if (!email) {
+        throw new Error('Email no encontrado en el mensaje');
       }
-    }, 10000);
-  </script>
+      
+      console.log('✅ Email extraído:', email);
+      
+      // Construir URL de V13
+      const v13Url = 'https://jousfit-n8n.q3fy2l.easypanel.host/webhook/customer-orders?email=' + encodeURIComponent(email);
+      
+      console.log('🚀 Cargando pedidos desde:', v13Url);
+      
+      // Ocultar loading y mostrar iframe
+      document.getElementById('loading').style.display = 'none';
+      const iframe = document.getElementById('orders-container');
+      iframe.src = v13Url;
+      iframe.style.display = 'block';
+      
+    } catch (error) {
+      console.error('❌ Error procesando mensaje:', error);
+      document.getElementById('loading').innerHTML = '<p style="color: #dc2626;">Error: ' + error.message + '</p>';
+    }
+  }, false);
+  
+  // Log inicial
+  console.log('Listener activo, esperando PostMessage de Chatwoot...');
+  
+  // Timeout de 10 segundos
+  setTimeout(() => {
+    if (!dataReceived) {
+      console.warn('⚠️ No se recibió PostMessage en 10 segundos');
+      document.getElementById('loading').innerHTML = '<p style="color: #f59e0b;">No se recibieron datos de Chatwoot</p>';
+    }
+  }, 10000);
+</script>
 </body>
 </html>
