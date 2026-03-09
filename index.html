@@ -295,52 +295,10 @@
   </div>
 
   <script>
-    // Obtener email del contacto desde Chatwoot SDK o query params
-    function getContactEmail() {
-      // Método 1: Desde query params (si la variable funciona)
+    // Obtener conversation_id de query params
+    function getConversationId() {
       const urlParams = new URLSearchParams(window.location.search);
-      const emailFromUrl = urlParams.get('email');
-      
-      // Si hay email en URL y no es la variable literal, usarlo
-      if (emailFromUrl && emailFromUrl !== '{{contact.email}}') {
-        return emailFromUrl;
-      }
-      
-      // Método 2: Desde Chatwoot SDK (usando postMessage)
-      // Esto es para versiones donde las variables no funcionan
-      return null; // Se manejará con el listener de mensajes
-    }
-
-    // Escuchar mensajes de Chatwoot
-    let contactEmail = getContactEmail();
-    
-    window.addEventListener('message', function(event) {
-      // Verificar que el mensaje viene de Chatwoot
-      if (event.data && event.data.event === 'dashboard-app-data') {
-        const contact = event.data.data?.contact;
-        if (contact && contact.email) {
-          contactEmail = contact.email;
-          loadOrders();
-        }
-      }
-    });
-
-    // Solicitar datos del contacto a Chatwoot
-    if (!contactEmail) {
-      window.parent.postMessage({
-        event: 'request-contact-data'
-      }, '*');
-      
-      // Timeout: si después de 3 segundos no hay email, intentar cargar de todas formas
-      setTimeout(() => {
-        if (!contactEmail) {
-          contactEmail = getContactEmail();
-          loadOrders();
-        }
-      }, 3000);
-    } else {
-      // Si ya tenemos email de URL, cargar inmediatamente
-      loadOrders();
+      return urlParams.get('conversation_id');
     }
 
     // Formatear fecha
@@ -470,12 +428,12 @@
 
     // Cargar pedidos
     async function loadOrders() {
-      const email = contactEmail;
+      const conversationId = getConversationId();
       
-      if (!email) {
+      if (!conversationId) {
         document.getElementById('content').innerHTML = `
           <div class="error">
-            <strong>Error:</strong> No se pudo obtener el email del contacto
+            <strong>Error:</strong> No se pudo obtener el ID de conversación
           </div>
         `;
         return;
@@ -483,7 +441,7 @@
 
       try {
         const response = await fetch(
-          `https://jousfit-n8n.q3fy2l.easypanel.host/webhook/customer-orders?email=${encodeURIComponent(email)}`
+          `https://jousfit-n8n.q3fy2l.easypanel.host/webhook/customer-orders?conversation_id=${encodeURIComponent(conversationId)}`
         );
         
         const data = await response.json();
@@ -498,6 +456,9 @@
         `;
       }
     }
+
+    // Cargar pedidos al inicio
+    loadOrders();
   </script>
 </body>
 </html>
